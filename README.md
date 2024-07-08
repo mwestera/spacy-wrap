@@ -9,6 +9,12 @@ automatic language detection, as well as printing spacy parses directly as json.
 $ pipx install git+https://github.com/mwestera/spacy-cli
 ```
 
+This will make three commands available:
+
+- `tokenize`
+- `sentencize`
+- `spacyjson`
+
 ## Examples
 
 Can print parse information per token and display a parse tree.
