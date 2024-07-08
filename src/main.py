@@ -55,6 +55,7 @@ def make_base_arg_parser():
     parser.add_argument('--lang', type=str, default=None, help="language (otherwise: auto-detect)")
     parser.add_argument('-l', '--lines', action='store_true', help="whether to process individual lines from the input")
     parser.add_argument('-t', '--trf', action='store_true', help="whether to use trankit's transformer models instead")
+    parser.add_argument('--id', action='store_true', help="whether number docs/sentences/tokens in the output, e.g., 4.3.6.")
 
     return parser
 
@@ -73,10 +74,10 @@ def tokenize():
     args = parser.parse_args()
 
     texts = text_reader(args.text, args.lines)
-    for doc in process_texts(texts, args.lang, args.trf):
-        for sentence in doc.sents:
-            for token in sentence:
-                print(token_to_str(token, args.info))
+    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+        for n_sent, sentence in enumerate(doc.sents):
+            for n_token, token in sentence:
+                print(token_to_str(token, args.info, index=f'{n_doc}.{n_sent}.{n_token}' if args.id else None))
 
             if args.sep:
                 print()
@@ -101,9 +102,15 @@ def sentencize():
     args = parser.parse_args()
 
     texts = text_reader(args.text, args.lines)
-    for doc in process_texts(texts, args.lang, args.trf):
-        for sentence in doc.sents:
-            s = sentence.as_docto_json() if args.json else sentence_to_str(sentence)
+    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+        for n_sent, sentence in enumerate(doc.sents):
+            if args.json:
+                d = sentence.as_doc().to_json()
+                if args.index:
+                    d['id'] = f'{n_doc}.{n_sent}'
+                s = json.dumps(d)
+            else:
+                s = sentence_to_str(sentence, index=f'{n_doc}.{n_sent}' if args.id else None)
             print(s)
 
         if args.sep:
@@ -121,8 +128,10 @@ def spacyjson():
     args = parser.parse_args()
 
     texts = text_reader(args.text, args.lines)
-    for doc in process_texts(texts, args.lang, args.trf):
-        s = doc.to_json()
+    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+        d = doc.to_json()
+        d['id'] = n_doc
+        s = json.dumps(d)
         print(s)
 
 
@@ -157,22 +166,28 @@ def process_texts(text_reader, lang: str, trf: bool):
         yield doc
 
 
-def token_to_str(token, verbose: bool, offsets=False):
+def token_to_str(token, verbose: bool, offsets=False, index=None):
     if verbose:
         s = f'{token.idx:<4} {token.idx + len(token.text):<4}    {token.text + ("("+token.lemma_+")" if token.text != token.lemma else ""):<20}   {token.pos_:>5}    {token.dep_ + "<" + token.head.text + ">":<20}       {token.tag_:<4}   {token.morph}'
     elif offsets:
         s = f'{token.idx:<4} {token.idx + len(token.text):<4} {token.text}'
     else:
         s = token.text
+    if index:
+        s = index + '    ' + s
     s = s.replace('\n', '\\n')
     return s
 
 
-def sentence_to_str(sentence, offsets=False):
+def sentence_to_str(sentence, offsets=False, index=None):
     if offsets:
-        return f'{sentence.start:<4} {sentence.end:<4} {sentence.text}'
+        s = f'{sentence.start:<4} {sentence.end:<4} {sentence.text}'
     else:
-        return sentence.text
+        s = sentence.text
+    if index:
+        s = index + '    ' + s
+    s = s.replace('\n', '\\n')
+    return s
 
 
 class PrintsToStderr:
