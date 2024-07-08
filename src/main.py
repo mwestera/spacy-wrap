@@ -106,7 +106,7 @@ def sentencize():
         for n_sent, sentence in enumerate(doc.sents):
             if args.json:
                 d = sentence.as_doc().to_json()
-                if args.index:
+                if args.id:
                     d['id'] = f'{n_doc}.{n_sent}'
                 s = json.dumps(d)
             else:
@@ -130,7 +130,8 @@ def spacyjson():
     texts = text_reader(args.text, args.lines)
     for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
         d = doc.to_json()
-        d['id'] = n_doc
+        if args.id:
+            d['id'] = n_doc
         s = json.dumps(d)
         print(s)
 
@@ -139,7 +140,7 @@ def text_reader(source, linewise: bool):
     if isinstance(source, str):
         texts = source.splitlines() if linewise else [source]
     else:   # it's stdin
-        texts = source.readlines() if linewise else [source.read()]
+        texts = source if linewise else [source.read()]
     for text in texts:
         yield text.rstrip()
 
