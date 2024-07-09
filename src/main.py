@@ -1,18 +1,29 @@
 #!/usr/bin/python
 
-import spacy
 import argparse
 import sys
 import functools
-import fasttext
 import logging
 import json
+import os
+
+import spacy
+
+if '--trf' in sys.argv:
+    import spacy_trankit
+    from trankit import Pipeline
+    from trankit.utils import code2lang, lang2treebank
+    from spacy_trankit.tokenizer import TrankitTokenizer
+else:
+    import spacy_fastlang  # registers the language_detector
+    import fasttext
+    fasttext.FastText.eprint = lambda x: None  # monkey patch as per https://github.com/facebookresearch/fastText/issues/1067
 
 
 """
 Author: Matthijs Westera
 
-Simple command-line interface to spacy. Allows word tokenization and sentence segmentation, for given language or using 
+Simple command-line interface to spacy and trankit. Allows word tokenization and sentence segmentation, for given language or using 
 automatic language detection, as well as printing spacy parses directly as json.
 
 Can print parse information per token and display a parse tree.
@@ -39,14 +50,11 @@ $ cat texts_in_various_languages.txt | spacyjson --lines --lang nl --json
 
 """
 
-
-fasttext.FastText.eprint = lambda x: None   # monkey patch as per https://github.com/facebookresearch/fastText/issues/1067
-
-
-models = {  # this only in case of spacy; transformer alternatives (--trf) loaded through trankit instead
-    'nl': 'nl_core_news_sm',
+spacy_models = {
     'en': 'en_core_web_sm',
+    'nl': 'nl_core_news_sm',
 }
+trankit_languages = list(spacy_models.keys())
 
 
 def make_base_arg_parser():
@@ -72,12 +80,19 @@ def tokenize():
     parser.add_argument('--sep', action='store_true', help="whether to separate multiple docs/sentences with (double) newlines.")
 
     args = parser.parse_args()
+    nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
-    texts = text_reader(args.text, args.lines)
-    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+    docs_for_displacy = []
+
+    for n_text, text in enumerate(text_reader(args.text, args.lines)):
+        doc = nlp(text)
+
+        if args.tree:
+            docs_for_displacy.append(doc)
+
         for n_sent, sentence in enumerate(doc.sents):
-            for n_token, token in sentence:
-                print(token_to_str(token, args.info, index=f'{n_doc}.{n_sent}.{n_token}' if args.id else None))
+            for n_token, token in enumerate(sentence):
+                print(token_to_str(token, args.info, index=f'{n_text}.{n_sent}.{n_token}' if args.id else None))
 
             if args.sep:
                 print()
@@ -85,8 +100,8 @@ def tokenize():
         if args.sep:
             print()
 
-        if args.tree:
-            spacy.displacy.serve(doc, style="dep")
+    if docs_for_displacy:
+        spacy.displacy.serve(docs_for_displacy, style="dep")
 
 
 def sentencize():
@@ -100,24 +115,31 @@ def sentencize():
     parser.add_argument('--sep', action='store_true', help="whether to separate multiple docs with (double) newlines.")
 
     args = parser.parse_args()
+    nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
-    texts = text_reader(args.text, args.lines)
-    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+    docs_for_displacy = []
+
+    for n_text, text in enumerate(text_reader(args.text, args.lines)):
+        doc = nlp(text)
+
+        if args.tree:
+            docs_for_displacy.append(doc)
+
         for n_sent, sentence in enumerate(doc.sents):
             if args.json:
                 d = sentence.as_doc().to_json()
                 if args.id:
-                    d['id'] = f'{n_doc}.{n_sent}'
+                    d['id'] = f'{n_text}.{n_sent}'
                 s = json.dumps(d)
             else:
-                s = sentence_to_str(sentence, index=f'{n_doc}.{n_sent}' if args.id else None)
+                s = sentence_to_str(sentence, index=f'{n_text}.{n_sent}' if args.id else None)
             print(s)
 
         if args.sep:
             print()
 
-        if args.tree:
-            spacy.displacy.serve(doc, style="dep")
+    if docs_for_displacy:
+        spacy.displacy.serve(docs_for_displacy, style="dep")
 
 
 def spacyjson():
@@ -127,13 +149,23 @@ def spacyjson():
     parser = make_base_arg_parser()
     args = parser.parse_args()
 
-    texts = text_reader(args.text, args.lines)
-    for n_doc, doc in enumerate(process_texts(texts, args.lang, args.trf)):
+    nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
+
+    docs_for_displacy = []
+
+    for n_text, text in enumerate(text_reader(args.text, args.lines)):
+        doc = nlp(text)
+        if args.tree:
+            docs_for_displacy.append(doc)
+
         d = doc.to_json()
         if args.id:
-            d['id'] = n_doc
+            d['id'] = n_text
         s = json.dumps(d)
         print(s)
+
+    if docs_for_displacy:
+        spacy.displacy.serve(docs_for_displacy, style="dep")
 
 
 def text_reader(source, linewise: bool):
@@ -143,28 +175,6 @@ def text_reader(source, linewise: bool):
         texts = source if linewise else [source.read()]
     for text in texts:
         yield text.rstrip()
-
-
-def process_texts(text_reader, lang: str, trf: bool):
-    # args = parse_args()
-
-    if lang:
-        lang_detector = None
-    else:
-        import spacy_fastlang   # registers the language_detector
-        lang_detector = spacy.blank('en')
-        lang_detector.add_pipe("language_detector")
-
-    for text in text_reader:
-        if lang_detector:
-            doc_detected = lang_detector(text)
-            lang = doc_detected._.language
-            if doc_detected._.language_score < .5:
-                logging.warning(f'Language detected with uncertainty: {lang}={doc_detected._.language_score}: {text}')
-
-        nlp = load_model(lang, trf)
-        doc = nlp(text)
-        yield doc
 
 
 def token_to_str(token, verbose: bool, offsets=False, index=None):
@@ -191,36 +201,86 @@ def sentence_to_str(sentence, offsets=False, index=None):
     return s
 
 
-class PrintsToStderr:
-    """
-    From https://stackoverflow.com/a/45669280, because trankit prints its debug info...
-    """
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = sys.stderr
+def load_spacy_model(lang: str):
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self._original_stdout
+    if not lang:
+        lang_detector = spacy.blank('en')
+        lang_detector.add_pipe("language_detector")
+
+        def automodel(text):
+            doc = lang_detector(text)
+            detected_lang = doc._.language
+            nlp = load_spacy_specific_model(detected_lang)
+            return nlp(text)
+
+        return automodel
+
+    else:
+        return load_spacy_specific_model(lang)
 
 
 @functools.cache
-def load_model(lang: str, trf: bool):
+def load_spacy_specific_model(lang):
 
-    if trf:
-        import spacy_trankit
-        with PrintsToStderr():
-            model = spacy_trankit.load(lang)
-    else:
-        try:
-            model_name = models[lang]
-        except KeyError:
-            raise NotImplementedError(f'Language {lang} not supported.')
+    try:
+        model_name = spacy_models[lang]
+    except KeyError:
+        raise NotImplementedError(f'Language {lang} not supported.')
 
-        try:
-            model = spacy.load(model_name)
-        except OSError:
-            spacy.cli.download(model_name)
-            model = spacy.load(model_name)
+    try:
+        model = spacy.load(model_name)
+    except OSError:
+        spacy.cli.download(model_name)
+        model = spacy.load(model_name)
 
     return model
+
+
+def load_trankit_model(lang: str):
+
+    class PrintsToStderr: # From https://stackoverflow.com/a/45669280, because trankit prints its debug info...
+        def __enter__(self):
+            self._original_stdout = sys.stdout
+            sys.stdout = sys.stderr
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            sys.stdout = self._original_stdout
+
+    with PrintsToStderr():
+        if lang:
+            model = spacy_trankit.load(lang)
+        else:
+            model = spacy_trankit.load(trankit_languages[0], **{'@tokenizers': 'spacy_cli.AutoPipelineAsTokenizer.v1'})
+
+    return model
+
+
+@spacy.util.registry.tokenizers("spacy_cli.AutoPipelineAsTokenizer.v1")
+def create_tokenizer(lang: str, cache_dir = None):
+    """
+    Adapted from spacy-trankit to enable automatic language detect.
+    """
+
+    def tokenizer_factory(nlp, lang=lang, cache_dir=cache_dir, **kwargs) -> "TrankitTokenizer":
+        load_from_path = cache_dir is not None
+        if lang not in lang2treebank and lang in code2lang:
+            lang = code2lang[lang]
+
+        if load_from_path:
+            if not os.path.exists(cache_dir):
+                raise ValueError(
+                    f"Path {cache_dir} does not exist. "
+                    f"Please download the model and save it to this path."
+                )
+            model = Pipeline(lang=lang, cache_dir=cache_dir, **kwargs)
+        else:
+            model = Pipeline(lang=lang, **kwargs)
+
+        # New addition compared to the official package:
+        for lang in trankit_languages[1:]:
+            model.add(code2lang[lang])
+        model.set_auto(True)
+
+        return TrankitTokenizer(model=model, vocab=nlp.vocab)
+
+    return tokenizer_factory
 
