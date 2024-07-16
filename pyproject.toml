@@ -3,20 +3,20 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "spacy-cli"
+name = "spacy-wrap"
 version = "0.1"
 authors = [{name="Matthijs Westera", email="m.westera@hum.leidenuniv.nl"}]
 description = "Very simple command-line interface for spacy."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["spacy", "spacy-fastlang", "spacy-trankit", "six"]
+dependencies = ["spacy", "spacy-fastlang", "spacy-trankit", "six", "transformers"]
 
 [project.scripts]
-tokenize = "main:tokenize"
-sentencize = "main:sentencize"
-spacyjson = "main:spacyjson"
+tokenize = "spacy_wrap.cli:tokenize_cli"
+sentencize = "spacy_wrap.cli:sentencize_cli"
+spacyjson = "spacy_wrap.cli:spacy_cli"
 
 [project.urls]
-"Homepage" = "https://github.com/mwestera/spacy-cli"
-"Bug Tracker" = "https://github.com/mwestera/spacy-cli/issues"
+"Homepage" = "https://github.com/mwestera/spacy-wrap"
+"Bug Tracker" = "https://github.com/mwestera/spacy-wrap/issues"
 
