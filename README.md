@@ -1,11 +1,11 @@
-# spacy-cli
+# spacy-wrap
 
 Convenient command-line interface for applying spacy and trankit pipelines. Allows word tokenization and sentence segmentation, for given language or using automatic language detection, as well as printing spacy parses directly as json.
 
 ## Install
 
 ```bash
-$ pipx install git+https://github.com/mwestera/spacy-cli
+$ pipx install git+https://github.com/mwestera/spacy-wrap
 ```
 
 This will make three commands available:
