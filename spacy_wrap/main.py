@@ -2,6 +2,7 @@ import functools
 import logging
 import os
 import sys
+from typing import Callable
 
 
 import spacy
@@ -53,7 +54,7 @@ def sentencize(text, language=None, use_trf=False, return_spacy=False):
         yield sent if return_spacy else sent.text
 
 
-def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, **kwargs):
+def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable[spacy.tokens.Span, bool] = None, **kwargs):
 
     min_n_sent = min_n_sent or 0
     min_n_tokens = min_n_tokens or 0
@@ -66,7 +67,9 @@ def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_toke
         n_tokens = len(sentence)
 
         for previous_sentence in reversed(sentences[:i]):
-            if (len(sentences_to_use) >= min_n_sent and n_tokens >= min_n_tokens) or n_tokens + len(previous_sentence) > max_n_tokens:
+            if ((block_context and block_context(previous_sentence))
+                    or (len(sentences_to_use) >= min_n_sent and n_tokens >= min_n_tokens)
+                    or (n_tokens + len(previous_sentence) > max_n_tokens)):
                 break
             sentences_to_use.insert(0, previous_sentence)
             n_tokens += len(previous_sentence)
