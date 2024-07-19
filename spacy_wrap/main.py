@@ -47,7 +47,7 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False, include_previous=0, include_previous_threshold=None):
+def sentencize(text, language=None, use_trf=False, return_spacy=False):
     doc = parse(text, language, use_trf)
     for sent in doc.sents:
         yield sent if return_spacy else sent.text
