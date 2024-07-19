@@ -16,6 +16,13 @@ from trankit import Pipeline
 from trankit.utils import code2lang, lang2treebank
 
 
+from spacy import displacy
+
+import tempfile
+import webbrowser
+
+
+
 
 spacy_models = {
     'en': 'en_core_web_sm',
@@ -37,10 +44,17 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False):
+def sentencize(text, language=None, use_trf=False, return_spacy=False, include_previous=0):
     doc = parse(text, language, use_trf)
-    for sent in doc.sents:
-        yield sent if return_spacy else sent.text
+    sentences = list(doc.sents)
+
+    n_previous = min(include_previous, len(sentences))
+    padded_sentences = [None for _ in range(n_previous)] + sentences
+    sentence_ngrams = [tuple(filter(None, ngram)) for ngram in zip(*[padded_sentences[i:] for i in range(n_previous + 1)])]
+
+    for ngram in sentence_ngrams:
+        span = doc[ngram[0].start:ngram[-1].end]
+        yield span if return_spacy else span.text
 
 
 @functools.cache
@@ -128,6 +142,13 @@ def create_tokenizer(lang: str, cache_dir = None):
 
     return tokenizer_factory
 
+
+def render_parse_tree_html(docs):
+    html = displacy.render(docs, style="dep")
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.html') as f:
+        url = 'file://' + f.name
+        f.write(html)
+    webbrowser.open(url)
 
 
 def token_to_str(token, verbose: bool, offsets=False, index=None):
