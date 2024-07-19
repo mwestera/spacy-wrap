@@ -40,7 +40,7 @@ $ cat texts_in_various_languages.txt | spacyjson --lines --lang nl --json
 
 def make_base_arg_parser():
     parser = argparse.ArgumentParser('Wrapper around Spacy and Trankit.')
-    parser.add_argument('text', nargs='?', type=str, default=sys.stdin, help="text to process (default: stdin)")
+    parser.add_argument('text', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help="file with text to process (default: stdin)")
     parser.add_argument('--lang', type=str, default=None, help="language (otherwise: auto-detect)")
     parser.add_argument('-l', '--lines', action='store_true', help="whether to process individual lines from the input")
     parser.add_argument('-t', '--trf', action='store_true', help="whether to use trankit's transformer models instead")
@@ -154,10 +154,7 @@ def spacy_cli():
 
 
 def text_reader(source, linewise: bool):
-    if isinstance(source, str):
-        texts = source.splitlines() if linewise else [source]
-    else:   # it's stdin
-        texts = source if linewise else [source.read()]
+    texts = source if linewise else [source.read()]
     for text in texts:
         yield text.rstrip()
 
