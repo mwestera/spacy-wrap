@@ -39,7 +39,7 @@ $ cat texts_in_various_languages.txt | spacyjson --lines --lang nl --json
 
 
 def make_base_arg_parser():
-    parser = argparse.ArgumentParser('Wrapper around Spacy and Trankit.')
+    parser = argparse.ArgumentParser(description='Wrapper around Spacy and Trankit.')
     parser.add_argument('text', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help="file with text to process (default: stdin)")
     parser.add_argument('--lang', type=str, default=None, help="language (otherwise: auto-detect)")
     parser.add_argument('-l', '--lines', action='store_true', help="whether to process individual lines from the input")
@@ -94,15 +94,31 @@ def sentencize_cli():
     parser.add_argument('--tree', action='store_true', help="whether to render dependency tree with displacy")
     parser.add_argument('--json', action='store_true', help="whether to print sentences as json(lines) format")
     parser.add_argument('--sep', action='store_true', help="whether to separate sentences for different docs with (double) newlines")
-    parser.add_argument('--prev', type=int, default=0, help="to prepend this many preceding sentences, yielding 'sentences in context'.")
 
+    parser.add_argument('--context', action='store_true', help="whether to prepend sentences with some context.")
+    parser.add_argument('--chunks', action='store_true', help="whether to prepend sentences with some context.")
+    parser.add_argument('--min_sent', type=int, default=1, help="each chunk is at least this many sentences, as far as max_tokens permits.")
+    parser.add_argument('--min_tokens', type=int, default=None, help="each chunk is at least this many tokens, as far max_tokens permits.")
+    parser.add_argument('--max_tokens', type=int, default=None, help="each chunk is at most this many tokens -- hard limit.")
     args = parser.parse_args()
+
+    if args.context and args.chunks:
+        logging.warning('Cannot do both --context and --chunked; ignoring the latter.')
+        args.chunks = False
 
     docs_for_displacy = []
 
+    if args.context:
+        sentencizer = functools.partial(sentencize_contextual, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
+    elif args.chunks:
+        sentencizer = functools.partial(sentencize_chunked, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
+    else:
+        sentencizer = sentencize
+    sentencizer = functools.partial(sentencizer, language=args.lang, use_trf=args.trf, return_spacy=True)
+
     for n_text, text in enumerate(text_reader(args.text, args.lines)):
 
-        for n_sent, sent in enumerate(sentencize(text, language=args.lang, use_trf=args.trf, return_spacy=True, include_previous=args.prev)):
+        for n_sent, sent in enumerate(sentencizer(text)):
 
             if args.tree or args.json:
                 sent_as_doc = sent.as_doc()
@@ -112,7 +128,7 @@ def sentencize_cli():
 
             if args.json:
                 if args.id:
-                    span_as_doc['id'] = f'{n_text}.{n_sent}'
+                    sent_as_doc['id'] = f'{n_text}.{n_sent}'
                 s = json.dumps(sent_as_doc.to_json())
             else:
                 s = sentence_to_str(sent, index=f'{n_text}.{n_sent}' if args.id else None)

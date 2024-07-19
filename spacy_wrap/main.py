@@ -47,16 +47,57 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False, include_previous=0):
+def sentencize(text, language=None, use_trf=False, return_spacy=False, include_previous=0, include_previous_threshold=None):
     doc = parse(text, language, use_trf)
-    sentences = list(doc.sents)
+    for sent in doc.sents:
+        yield sent if return_spacy else sent.text
 
-    n_previous = min(include_previous, len(sentences))
-    padded_sentences = [None for _ in range(n_previous)] + sentences
-    sentence_ngrams = [tuple(filter(None, ngram)) for ngram in zip(*[padded_sentences[i:] for i in range(n_previous + 1)])]
 
-    for ngram in sentence_ngrams:
-        span = doc[ngram[0].start:ngram[-1].end]
+def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, **kwargs):
+
+    min_n_sent = min_n_sent or 0
+    min_n_tokens = min_n_tokens or 0
+    max_n_tokens = max_n_tokens or 9999999
+
+    sentences = list(sentencize(*args, **kwargs, return_spacy=True))
+
+    for i, sentence in enumerate(sentences):
+        sentences_to_use = [sentence]
+        n_tokens = len(sentence)
+
+        for previous_sentence in reversed(sentences[:i]):
+            if (len(sentences_to_use) >= min_n_sent and n_tokens >= min_n_tokens) or n_tokens + len(previous_sentence) > max_n_tokens:
+                break
+            sentences_to_use.insert(0, previous_sentence)
+            n_tokens += len(previous_sentence)
+
+        chunk = sentences_to_use[0].doc[sentences_to_use[0].start:sentences_to_use[-1].end]
+        yield chunk if return_spacy else chunk.text
+
+
+def sentencize_chunked(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, **kwargs):
+
+    min_n_sent = min_n_sent or 0
+    min_n_tokens = min_n_tokens or 0
+    max_n_tokens = max_n_tokens or 9999999
+
+    current_chunk = []
+    current_n_tokens = 0
+
+    for sentence in sentencize(*args, **kwargs, return_spacy=True):
+
+        if current_chunk and ((len(current_chunk) >= min_n_sent and current_n_tokens >= min_n_tokens) or current_n_tokens + len(sentence) > max_n_tokens):
+            span = current_chunk[0].doc[current_chunk[0].start:current_chunk[-1].end]
+            yield span if return_spacy else span.text
+
+            current_chunk = [sentence]
+            current_n_tokens = len(sentence)
+
+        current_chunk.append(sentence)
+        current_n_tokens += len(sentence)
+
+    if current_chunk:
+        span = current_chunk[0].doc[current_chunk[0].start:current_chunk[-1].end]
         yield span if return_spacy else span.text
 
 
