@@ -6,11 +6,6 @@ import json
 
 from .main import *
 
-from spacy import displacy
-
-# TODO: Where do cached models go?
-# TODO: Use deplacy instead of displacy?
-
 
 """
 Author: Matthijs Westera
@@ -44,7 +39,7 @@ $ cat texts_in_various_languages.txt | spacyjson --lines --lang nl --json
 
 
 def make_base_arg_parser():
-    parser = argparse.ArgumentParser('Simple interface to Spacy.')
+    parser = argparse.ArgumentParser('Wrapper around Spacy and Trankit.')
     parser.add_argument('text', nargs='?', type=str, default=sys.stdin, help="text to process (default: stdin)")
     parser.add_argument('--lang', type=str, default=None, help="language (otherwise: auto-detect)")
     parser.add_argument('-l', '--lines', action='store_true', help="whether to process individual lines from the input")
@@ -87,7 +82,7 @@ def tokenize_cli():
             print()
 
     if docs_for_displacy:
-        displacy.serve(docs_for_displacy, style="dep")
+        render_parse_tree_html(docs_for_displacy)
 
 
 def sentencize_cli():
@@ -98,34 +93,37 @@ def sentencize_cli():
     # parser.add_argument('--offsets', action='store_true', help="whether to include token/sentence start/end characters")
     parser.add_argument('--tree', action='store_true', help="whether to render dependency tree with displacy")
     parser.add_argument('--json', action='store_true', help="whether to print sentences as json(lines) format")
-    parser.add_argument('--sep', action='store_true', help="whether to separate multiple docs with (double) newlines.")
+    parser.add_argument('--sep', action='store_true', help="whether to separate sentences for different docs with (double) newlines")
+    parser.add_argument('--prev', type=int, default=0, help="to prepend this many preceding sentences, yielding 'sentences in context'.")
 
     args = parser.parse_args()
-    nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
     docs_for_displacy = []
 
     for n_text, text in enumerate(text_reader(args.text, args.lines)):
-        doc = nlp(text)
 
-        if args.tree:
-            docs_for_displacy.append(doc)
+        for n_sent, sent in enumerate(sentencize(text, language=args.lang, use_trf=args.trf, return_spacy=True, include_previous=args.prev)):
 
-        for n_sent, sentence in enumerate(doc.sents):
+            if args.tree or args.json:
+                sent_as_doc = sent.as_doc()
+
+            if args.tree:
+                docs_for_displacy.append(sent_as_doc)
+
             if args.json:
-                d = sentence.as_doc().to_json()
                 if args.id:
-                    d['id'] = f'{n_text}.{n_sent}'
-                s = json.dumps(d)
+                    span_as_doc['id'] = f'{n_text}.{n_sent}'
+                s = json.dumps(sent_as_doc.to_json())
             else:
-                s = sentence_to_str(sentence, index=f'{n_text}.{n_sent}' if args.id else None)
+                s = sentence_to_str(sent, index=f'{n_text}.{n_sent}' if args.id else None)
+
             print(s)
 
         if args.sep:
             print()
 
     if docs_for_displacy:
-        displacy.serve(docs_for_displacy, style="dep")
+        render_parse_tree_html(docs_for_displacy)
 
 
 def spacy_cli():
@@ -152,7 +150,7 @@ def spacy_cli():
         print(s)
 
     if docs_for_displacy:
-        displacy.serve(docs_for_displacy, style="dep")
+        render_parse_tree_html(docs_for_displacy)
 
 
 def text_reader(source, linewise: bool):

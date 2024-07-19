@@ -22,6 +22,9 @@ import tempfile
 import webbrowser
 
 
+# TODO: Where do cached models go?
+# TODO: option to set language globally
+
 
 
 spacy_models = {
