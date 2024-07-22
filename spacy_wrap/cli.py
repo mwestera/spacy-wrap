@@ -75,9 +75,6 @@ def tokenize_cli():
             for n_token, token in enumerate(sentence):
                 print(token_to_str(token, args.info, index=f'{n_text}.{n_sent}.{n_token}' if args.id else None))
 
-            if args.sep:
-                print()
-
         if args.sep:
             print()
 
