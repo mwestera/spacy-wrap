@@ -65,15 +65,14 @@ def tokenize_cli():
 
     docs_for_displacy = []
 
-    for n_text, text in enumerate(text_reader(args.text, args.lines)):
-        doc = nlp(text)
+    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
 
         if args.tree:
             docs_for_displacy.append(doc)
 
         for n_sent, sentence in enumerate(doc.sents):
             for n_token, token in enumerate(sentence):
-                print(token_to_str(token, args.info, index=f'{n_text}.{n_sent}.{n_token}' if args.id else None))
+                print(token_to_str(token, args.info, index=f'{n_doc}.{n_sent}.{n_token}' if args.id else None))
 
         if args.sep:
             print()
@@ -104,18 +103,16 @@ def sentencize_cli():
         args.chunks = False
 
     docs_for_displacy = []
+    nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
-    if args.context:
-        sentencizer = functools.partial(sentencize_contextual, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
-    elif args.chunks:
-        sentencizer = functools.partial(sentencize_chunked, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
-    else:
-        sentencizer = sentencize
+    sentencizer = sentencize_contextual if args.context else sentencize_chunked if args.chunked else sentencize
     sentencizer = functools.partial(sentencizer, language=args.lang, use_trf=args.trf, return_spacy=True)
+    if args.context or args.chunks:
+        sentencizer = functools.partial(sentencizer, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
 
-    for n_text, text in enumerate(text_reader(args.text, args.lines)):
+    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
 
-        for n_sent, sent in enumerate(sentencizer(text)):
+        for n_sent, sent in enumerate(sentencizer(doc)):
 
             if args.tree or args.json:
                 sent_as_doc = sent.as_doc()
@@ -125,10 +122,10 @@ def sentencize_cli():
 
             if args.json:
                 if args.id:
-                    sent_as_doc['id'] = f'{n_text}.{n_sent}'
+                    sent_as_doc['id'] = f'{n_doc}.{n_sent}'
                 s = json.dumps(sent_as_doc.to_json())
             else:
-                s = sentence_to_str(sent, index=f'{n_text}.{n_sent}' if args.id else None)
+                s = sentence_to_str(sent, index=f'{n_doc}.{n_sent}' if args.id else None)
 
             print(s)
 
@@ -151,14 +148,13 @@ def spacy_cli():
 
     docs_for_displacy = []
 
-    for n_text, text in enumerate(text_reader(args.text, args.lines)):
-        doc = nlp(text)
+    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
         if args.tree:
             docs_for_displacy.append(doc)
 
         d = doc.to_json()
         if args.id:
-            d['id'] = n_text
+            d['id'] = n_doc
         s = json.dumps(d)
         print(s)
 
