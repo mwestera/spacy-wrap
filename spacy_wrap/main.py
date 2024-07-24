@@ -2,7 +2,7 @@ import functools
 import logging
 import os
 import sys
-from typing import Callable
+from typing import Callable, Union
 
 
 import spacy
@@ -48,8 +48,11 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False):
-    doc = parse(text, language, use_trf)
+def sentencize(text: Union[str, spacy.tokens.doc], language=None, use_trf=False, return_spacy=False):
+    if isinstance(text, str):
+        doc = parse(text, language, use_trf)
+    else:   # assume its doc
+        doc = text
     for sent in doc.sents:
         yield sent if return_spacy else sent.text
 
