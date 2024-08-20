@@ -105,12 +105,12 @@ def sentencize_cli():
     docs_for_displacy = []
     nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
-    sentencizer = sentencize_contextual if args.context else sentencize_chunked if args.chunked else sentencize
+    sentencizer = sentencize_contextual if args.context else sentencize_chunked if args.chunks else sentencize
     sentencizer = functools.partial(sentencizer, language=args.lang, use_trf=args.trf, return_spacy=True)
     if args.context or args.chunks:
         sentencizer = functools.partial(sentencizer, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
 
-    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
+    for n_doc, doc in enumerate(nlp.pipe(text_reader(args.text, args.lines))):
 
         for n_sent, sent in enumerate(sentencizer(doc)):
 
