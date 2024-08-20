@@ -25,7 +25,7 @@ import webbrowser
 
 # TODO: Where do cached models go?
 # TODO: option to set language globally
-
+# TODO: spacy's small nl sentencizer is actually quite bad.
 
 
 spacy_models = {
