@@ -48,7 +48,7 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text: Union[str, spacy.tokens.doc], language=None, use_trf=False, return_spacy=False):
+def sentencize(text, language=None, use_trf=False, return_spacy=False):
     if isinstance(text, str):
         doc = parse(text, language, use_trf)
     else:   # assume its doc
