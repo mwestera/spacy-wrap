@@ -57,7 +57,7 @@ def sentencize(text, language=None, use_trf=False, return_spacy=False):
         yield sent if return_spacy else sent.text
 
 
-def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable[spacy.tokens.Span, bool] = None, **kwargs):
+def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable = None, **kwargs):
 
     min_n_sent = min_n_sent or 0
     min_n_tokens = min_n_tokens or 0
