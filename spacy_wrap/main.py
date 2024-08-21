@@ -25,12 +25,11 @@ import webbrowser
 
 # TODO: Where do cached models go?
 # TODO: option to set language globally
-# TODO: spacy's small nl sentencizer is actually quite bad.
 
 
 spacy_models = {
     'en': 'en_core_web_sm',
-    'nl': 'nl_core_news_sm',
+    'nl': 'nl_core_news_md',
 }
 trankit_languages = list(spacy_models.keys())
 
