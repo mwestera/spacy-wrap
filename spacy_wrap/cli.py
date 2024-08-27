@@ -65,7 +65,7 @@ def tokenize_cli():
 
     docs_for_displacy = []
 
-    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
+    for n_doc, doc in enumerate(nlp.pipe(text_reader(args.text, args.lines))):
 
         if args.tree:
             docs_for_displacy.append(doc)
@@ -148,7 +148,7 @@ def spacy_cli():
 
     docs_for_displacy = []
 
-    for n_doc, doc in enumerate(nlp(text_reader(args.text, args.lines))):
+    for n_doc, doc in enumerate(nlp.pipe(text_reader(args.text, args.lines))):
         if args.tree:
             docs_for_displacy.append(doc)
 

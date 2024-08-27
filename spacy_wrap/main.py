@@ -119,6 +119,12 @@ def load_spacy_model(lang: str = None):
             nlp = load_spacy_specific_model(detected_lang)
             return nlp(text)
 
+        def pipe(texts):
+            for text in texts:
+                yield automodel(text)
+
+        automodel.pipe = pipe   # TODO: workaround; need to make it an actual model instance
+
         return automodel
 
     else:
