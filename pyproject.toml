@@ -8,7 +8,7 @@ version = "0.1"
 authors = [{name="Matthijs Westera", email="m.westera@hum.leidenuniv.nl"}]
 description = "Very simple command-line interface for spacy."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.10"
 dependencies = ["spacy", "spacy-fastlang", "spacy-trankit", "six", "transformers"]
 
 [project.scripts]
