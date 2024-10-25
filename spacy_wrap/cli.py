@@ -67,15 +67,15 @@ def tokenize_cli():
 
     for n_doc, doc in enumerate(nlp.pipe(text_reader(args.text, args.lines))):
 
+        if args.sep and n_doc:
+            print()
+
         if args.tree:
             docs_for_displacy.append(doc)
 
         for n_sent, sentence in enumerate(doc.sents):
             for n_token, token in enumerate(sentence):
                 print(token_to_str(token, args.info, index=f'{n_doc}.{n_sent}.{n_token}' if args.id else None))
-
-        if args.sep:
-            print()
 
     if docs_for_displacy:
         render_parse_tree_html(docs_for_displacy)
@@ -113,6 +113,9 @@ def sentencize_cli():
 
     for n_doc, doc in enumerate(nlp.pipe(text_reader(args.text, args.lines))):
 
+        if args.sep and n_doc:
+            print()
+
         for n_sent, sent in enumerate(sentencizer(doc)):
 
             if args.tree or args.json:
@@ -131,9 +134,6 @@ def sentencize_cli():
                 s = sentence_to_str(sent, index=f'{n_doc}.{n_sent}' if args.id else None)
 
             print(s)
-
-        if args.sep:
-            print()
 
     if docs_for_displacy:
         render_parse_tree_html(docs_for_displacy)
