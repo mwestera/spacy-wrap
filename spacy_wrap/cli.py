@@ -129,7 +129,11 @@ def sentencize_cli():
                     sent_as_doc['id'] = f'{n_doc}.{n_sent}'
                 s = json.dumps(sent_as_doc.to_json())
             elif args.spans:
-                s = json.dumps({'start': sent.start, 'end': sent.end, 'text': sent.text})
+                if args.context or args.chunks:
+                    sentences = list(sent.sents)
+                    s = json.dumps({'offset': sent.start_char, 'start': sentences[-1].start_char - sent.start_char, 'end': sentences[-1].end_char - sent.start_char, 'text': sent.text})
+                else:
+                    s = json.dumps({'start': sent.start_char, 'end': sent.end_char, 'text': sent.text})
             else:
                 s = sentence_to_str(sent, index=f'{n_doc}.{n_sent}' if args.id else None)
 
