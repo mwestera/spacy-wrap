@@ -132,9 +132,9 @@ def sentencize_cli():
                 if args.context or args.chunks:
                     sentences = list(sent.sents)
                     offset = sent.start_char
-                    s = json.dumps({'offset': offset,
-                                    'start': sentences[-1].start_char - offset,
-                                    'end': sentences[-1].end_char - offset,
+                    s = json.dumps({'chunk_start': offset,
+                                    'sentence_start': sentences[-1].start_char - offset,
+                                    'chunk_text': sent.text,
                                     'context': sent.text[:sentences[-1].start_char - offset],
                                     'sentence': sentences[-1].text})
                 else:
