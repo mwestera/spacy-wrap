@@ -91,7 +91,7 @@ def sentencize_cli():
     parser.add_argument('--json', action='store_true', help="whether to print sentences as json(lines) format")
     parser.add_argument('--sep', action='store_true', help="whether to separate sentences for different docs with (double) newlines")
 
-    parser.add_argument('--spans', action='store_true', help="Whether to output lines like {start: ..., end: ..., text: ...}.")
+    parser.add_argument('--spans', action='store_true', help="Whether to output lines like {offset: ..., context: ..., start: ..., end: ..., sentence: ...}.")
     parser.add_argument('--context', action='store_true', help="whether to prepend sentences with some context.")
     parser.add_argument('--chunks', action='store_true', help="whether to prepend sentences with some context.")
     parser.add_argument('--min_sent', type=int, default=1, help="each chunk is at least this many sentences (only with --context or --chunks; >=1).")
@@ -131,7 +131,12 @@ def sentencize_cli():
             elif args.spans:
                 if args.context or args.chunks:
                     sentences = list(sent.sents)
-                    s = json.dumps({'offset': sent.start_char, 'start': sentences[-1].start_char - sent.start_char, 'end': sentences[-1].end_char - sent.start_char, 'text': sent.text})
+                    offset = sent.start_char
+                    s = json.dumps({'offset': offset,
+                                    'start': sentences[-1].start_char - offset,
+                                    'end': sentences[-1].end_char - offset,
+                                    'sentence': sentences[-1].text,
+                                    'context': sent.text[:sentences[-1].start_char]})
                 else:
                     s = json.dumps({'start': sent.start_char, 'end': sent.end_char, 'text': sent.text})
             else:
