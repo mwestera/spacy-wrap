@@ -135,8 +135,8 @@ def sentencize_cli():
                     s = json.dumps({'offset': offset,
                                     'start': sentences[-1].start_char - offset,
                                     'end': sentences[-1].end_char - offset,
-                                    'sentence': sentences[-1].text,
-                                    'context': sent.text[:sentences[-1].start_char]})
+                                    'context': sent.text[:sentences[-1].start_char - offset],
+                                    'sentence': sentences[-1].text})
                 else:
                     s = json.dumps({'start': sent.start_char, 'end': sent.end_char, 'text': sent.text})
             else:
