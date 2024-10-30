@@ -96,7 +96,7 @@ def sentencize_cli():
     parser.add_argument('--chunks', action='store_true', help="whether to prepend sentences with some context.")
     parser.add_argument('--min_sent', type=int, default=1, help="each chunk is at least this many sentences (only with --context or --chunks; >=1).")
     parser.add_argument('--min_tokens', type=int, default=15, help="each chunk has at least this many tokens (only with --context or --chunks).")
-    parser.add_argument('--max_tokens', type=int, default=50, help="each chunk is at most this many tokens, except if necessary for min_sent/min_tokens (only with --context or --chunks).")
+    parser.add_argument('--max_tokens', type=int, default=100, help="each chunk is at most this many tokens, except if necessary for min_sent/min_tokens (only with --context or --chunks).")
     args = parser.parse_args()
 
     if args.context and args.chunks:
