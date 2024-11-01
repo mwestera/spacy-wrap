@@ -47,13 +47,18 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False):
+def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_punct='.!?'):
     if isinstance(text, str):
         doc = parse(text, language, use_trf)
     else:   # assume its doc
         doc = text
+    sents_to_merge = []
     for sent in doc.sents:
-        yield sent if return_spacy else sent.text
+        sents_to_merge.append(sent)
+        if not strict_punct or sent.text.strip()[-1] in strict_punct:
+            sent = doc[sents_to_merge[0].start:sents_to_merge[-1].end]
+            sents_to_merge = []
+            yield sent if return_spacy else sent.text
 
 
 def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable = None, **kwargs):
@@ -227,5 +232,4 @@ def sentence_to_str(sentence, offsets=False, index=None):
     if index:
         s = index + '    ' + s
     s = s.replace('\n', '\\n')
-    return s
-
+    retur
