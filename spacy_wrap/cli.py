@@ -92,7 +92,7 @@ def sentencize_cli():
     parser.add_argument('--sep', action='store_true', help="whether to separate sentences for different docs with (double) newlines")
 
     parser.add_argument('--balanced', action='store_true', help="whether to balance quotation marks/parentheses within returned sentences; suitable for texts containing only short quotes as parts of larger sentences.")
-    parser.add_argument('--endswith', type=str, default='.!?', help="to split sentences only where the first ends with one of the characters in this string")
+    parser.add_argument('--endswith', type=str, default=None, help="to split sentences only where the first ends with one of the characters in this string, e.g., '.?!'")
 
 
     parser.add_argument('--spans', action='store_true', help="Whether to output lines like {offset: ..., context: ..., start: ..., end: ..., sentence: ...}.")
