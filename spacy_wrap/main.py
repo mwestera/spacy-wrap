@@ -67,7 +67,7 @@ def sentencize(text, language=None, use_trf=False, return_spacy=False, endswith=
 
 
 def balanced_paren_or_quote(text):
-    open_close_marks = [('«', '»'), ('“', '”'), ('(', ')'), ('[', ']')]
+    open_close_marks = [('«', '»'), ('“', '”'), ('(', ')'), ('[', ']'), ('„', '”')]
     for o,c in open_close_marks:
         if text.count(o) != text.count(c):
             return False
