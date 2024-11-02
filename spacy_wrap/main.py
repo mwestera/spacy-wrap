@@ -47,7 +47,7 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_punct='.!?'):
+def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_punct='.!?', keep_quotes_together=True):
     if isinstance(text, str):
         doc = parse(text, language, use_trf)
     else:   # assume its doc
@@ -55,10 +55,25 @@ def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_pu
     sents_to_merge = []
     for sent in doc.sents:
         sents_to_merge.append(sent)
-        if not strict_punct or sent.text.strip()[-1] in strict_punct:
-            sent = doc[sents_to_merge[0].start:sents_to_merge[-1].end]
+        span = doc[sents_to_merge[0].start:sents_to_merge[-1].end]
+        if keep_quotes_together and not balanced_paren_or_quote(span.text):
+            continue
+        if not strict_punct or sent.text.strip()[-1] in strict_punct:  # TODO: And not break up sents in quotation marks?   \u00ab  \u00bb
             sents_to_merge = []
-            yield sent if return_spacy else sent.text
+            yield span if return_spacy else span.text
+
+
+def balanced_paren_or_quote(text):
+    open_close_marks = [('«', '»'), ('“', '”'), ('(', ')'), ('[', ']')]
+    for o,c in open_close_marks:
+        if text.count(o) != text.count(c):
+            return False
+    symmetrical_marks = '"'
+    for s in symmetrical_marks:
+        if text.count(s) % 2 != 0:
+            return False
+    return True
+
 
 
 def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable = None, **kwargs):

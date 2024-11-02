@@ -103,6 +103,8 @@ def sentencize_cli():
         logging.warning('Cannot do both --context and --chunked; ignoring the latter.')
         args.chunks = False
 
+    logging.warning('Two recently added options are not yet cli-controllable: sentencize params strict_punct=".!?", and no_split_quotes=True')
+
     docs_for_displacy = []
     nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
