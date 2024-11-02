@@ -91,6 +91,10 @@ def sentencize_cli():
     parser.add_argument('--json', action='store_true', help="whether to print sentences as json(lines) format")
     parser.add_argument('--sep', action='store_true', help="whether to separate sentences for different docs with (double) newlines")
 
+    parser.add_argument('--balanced', action='store_true', help="whether to balance quotation marks/parentheses within returned sentences; suitable for texts containing only short quotes as parts of larger sentences.")
+    parser.add_argument('--endswith', type=str, default='.!?', help="to split sentences only where the first ends with one of the characters in this string")
+
+
     parser.add_argument('--spans', action='store_true', help="Whether to output lines like {offset: ..., context: ..., start: ..., end: ..., sentence: ...}.")
     parser.add_argument('--context', action='store_true', help="whether to prepend sentences with some context.")
     parser.add_argument('--chunks', action='store_true', help="whether to prepend sentences with some context.")
@@ -103,13 +107,11 @@ def sentencize_cli():
         logging.warning('Cannot do both --context and --chunked; ignoring the latter.')
         args.chunks = False
 
-    logging.warning('Two recently added options are not yet cli-controllable: sentencize params strict_punct=".!?", and no_split_quotes=True')
-
     docs_for_displacy = []
     nlp = load_trankit_model(args.lang) if args.trf else load_spacy_model(args.lang)
 
     sentencizer = sentencize_contextual if args.context else sentencize_chunked if args.chunks else sentencize
-    sentencizer = functools.partial(sentencizer, language=args.lang, use_trf=args.trf, return_spacy=True)
+    sentencizer = functools.partial(sentencizer, language=args.lang, use_trf=args.trf, return_spacy=True, endswith=args.endswith, balanced=args.balanced)
     if args.context or args.chunks:
         sentencizer = functools.partial(sentencizer, min_n_sent=args.min_sent, min_n_tokens=args.min_tokens, max_n_tokens=args.max_tokens)
 

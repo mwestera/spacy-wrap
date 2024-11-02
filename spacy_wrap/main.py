@@ -47,7 +47,7 @@ def tokenize(text, language=None, use_trf=False, return_spacy=False):
         yield tok if return_spacy else tok.text
 
 
-def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_punct='.!?', keep_quotes_together=True):
+def sentencize(text, language=None, use_trf=False, return_spacy=False, endswith=None, balanced=True):
     if isinstance(text, str):
         doc = parse(text, language, use_trf)
     else:   # assume its doc
@@ -56,11 +56,14 @@ def sentencize(text, language=None, use_trf=False, return_spacy=False, strict_pu
     for sent in doc.sents:
         sents_to_merge.append(sent)
         span = doc[sents_to_merge[0].start:sents_to_merge[-1].end]
-        if keep_quotes_together and not balanced_paren_or_quote(span.text):
+        if balanced and not balanced_paren_or_quote(span.text):
             continue
-        if not strict_punct or sent.text.strip()[-1] in strict_punct:  # TODO: And not break up sents in quotation marks?   \u00ab  \u00bb
+        if endswith is None or sent.text.strip()[-1] in endswith:  # TODO: And not break up sents in quotation marks?   \u00ab  \u00bb
             sents_to_merge = []
             yield span if return_spacy else span.text
+    if sents_to_merge:
+        span = doc[sents_to_merge[0].start:sents_to_merge[-1].end]
+        yield span if return_spacy else span.text
 
 
 def balanced_paren_or_quote(text):
