@@ -250,4 +250,4 @@ def sentence_to_str(sentence, offsets=False, index=None):
     if index:
         s = index + '    ' + s
     s = s.replace('\n', '\\n')
-    retur
+    return s
