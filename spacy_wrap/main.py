@@ -79,11 +79,10 @@ def balanced_paren_or_quote(text):
 
 
 
-def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, block_context: Callable = None, **kwargs):
-
-    min_n_sent = min_n_sent or 0
-    min_n_tokens = min_n_tokens or 0
-    max_n_tokens = max_n_tokens or 9999999
+def sentencize_contextual(*args, return_spacy=False, min_n_sent=1, min_n_tokens=1, max_n_tokens=99999999, block_context: Callable = None, **kwargs):
+    """
+    Yield sentences with their preceding contexts. Hence, these will overlap.
+    """
 
     sentences = list(sentencize(*args, **kwargs, return_spacy=True))
 
@@ -103,11 +102,10 @@ def sentencize_contextual(*args, return_spacy=False, min_n_sent=None, min_n_toke
         yield chunk if return_spacy else chunk.text
 
 
-def sentencize_chunked(*args, return_spacy=False, min_n_sent=None, min_n_tokens=None, max_n_tokens=None, **kwargs):
-
-    min_n_sent = min_n_sent or 0
-    min_n_tokens = min_n_tokens or 0
-    max_n_tokens = max_n_tokens or 9999999
+def sentencize_chunked(*args, return_spacy=False, min_n_sent=1, min_n_tokens=1, max_n_tokens=99999999, **kwargs):
+    """
+    Yield non-overlapping chunks of sentences.
+    """
 
     current_chunk = []
     current_n_tokens = 0
@@ -118,8 +116,8 @@ def sentencize_chunked(*args, return_spacy=False, min_n_sent=None, min_n_tokens=
             span = current_chunk[0].doc[current_chunk[0].start:current_chunk[-1].end]
             yield span if return_spacy else span.text
 
-            current_chunk = [sentence]
-            current_n_tokens = len(sentence)
+            current_chunk = []
+            current_n_tokens = 0
 
         current_chunk.append(sentence)
         current_n_tokens += len(sentence)
